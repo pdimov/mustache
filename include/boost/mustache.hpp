@@ -5,6 +5,6 @@
 // Distributed under the Boost Software License, Version 1.0.
 // https://www.boost.org/LICENSE_1_0.txt
 
-#include <boost/mustache/mustache.hpp>
+#include <boost/mustache/render.hpp>
 
 #endif // #ifndef BOOST_MUSTACHE_HPP_INCLUDED

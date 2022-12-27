@@ -19,3 +19,5 @@ run quick.cpp ;
 
 run output_ref.cpp ;
 run output_ref2.cpp ;
+
+run render_literal.cpp ;
