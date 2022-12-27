@@ -39,7 +39,7 @@ public:
     {
     }
 
-    BOOST_MUSTACHE_DECL void render( core::string_view tmpl, output_ref out );
+    BOOST_MUSTACHE_DECL void render_some( core::string_view tmpl, output_ref out );
     BOOST_MUSTACHE_DECL void finish( output_ref out );
 };
 

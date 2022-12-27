@@ -16,7 +16,7 @@ template<class T1 = json::value, class T2 = json::object> void render( core::str
 {
     mustache::renderer rd( data, partials, sp );
 
-    rd.render( tmpl, out );
+    rd.render_some( tmpl, out );
     rd.finish( out );
 }
 
