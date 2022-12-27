@@ -16,3 +16,6 @@ project : requirements
   <toolset>gcc:<warnings-as-errors>on ;
 
 run quick.cpp ;
+
+run output_ref.cpp ;
+run output_ref2.cpp ;
