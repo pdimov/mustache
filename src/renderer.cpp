@@ -17,7 +17,7 @@ boost::mustache::renderer::~renderer()
 
 void boost::mustache::renderer::render( core::string_view tmpl, output_ref out )
 {
-    out.output( tmpl );
+    out.write( tmpl );
 }
 
 void boost::mustache::renderer::finish( output_ref /*out*/ )

@@ -49,7 +49,7 @@ public:
     {
     }
 
-    void output( core::string_view sv )
+    void write( core::string_view sv )
     {
         fptr_( out_, sv );
     }

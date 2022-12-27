@@ -12,10 +12,10 @@ int main()
 
     boost::mustache::output_ref out( os );
 
-    out.output( ".bar" );
+    out.write( ".bar" );
     BOOST_TEST_EQ( os.str(), std::string("foo.bar") );
 
-    out.output( ".baz" );
+    out.write( ".baz" );
     BOOST_TEST_EQ( os.str(), std::string("foo.bar.baz") );
 
     return boost::report_errors();
