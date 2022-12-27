@@ -6,6 +6,7 @@
 // https://www.boost.org/LICENSE_1_0.txt
 
 #include <boost/mustache/output_ref.hpp>
+#include <boost/mustache/config.hpp>
 #include <boost/json/value.hpp>
 #include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
@@ -27,15 +28,16 @@ private:
 
 public:
 
-    renderer( json::value const& data, json::value const& partials );
+    BOOST_MUSTACHE_DECL renderer( json::value const& data, json::value const& partials );
+    BOOST_MUSTACHE_DECL ~renderer();
 
     template<class T1, class T2> explicit renderer( T1 const& data, T2 const& partials, json::storage_ptr sp = {} ):
         renderer( json::value_from( data, sp ), json::value_from( partials, sp ) )
     {
     }
 
-    void render( core::string_view tmpl, output_ref out );
-    void finish( output_ref out );
+    BOOST_MUSTACHE_DECL void render( core::string_view tmpl, output_ref out );
+    BOOST_MUSTACHE_DECL void finish( output_ref out );
 };
 
 } // namespace mustache

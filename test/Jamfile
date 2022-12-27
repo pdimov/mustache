@@ -7,9 +7,9 @@ import ../../config/checks/config : requires ;
 
 project : requirements
 
-  <warnings>extra
+  <library>/boost/mustache//boost_mustache
 
-  #[ requires cxx14_return_type_deduction ]
+  <warnings>extra
 
   <toolset>msvc:<warnings-as-errors>on
   <toolset>clang:<warnings-as-errors>on
