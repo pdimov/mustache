@@ -30,6 +30,7 @@ private:
         state_start_delim,
         state_tag,
         state_end_delim,
+        state_end_triple,
         state_passthrough,
         state_standalone,
         state_standalone_2
@@ -58,11 +59,19 @@ private:
     BOOST_MUSTACHE_DECL core::string_view handle_state_start_delim( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_tag( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_end_delim( core::string_view in, output_ref out );
+    BOOST_MUSTACHE_DECL core::string_view handle_state_end_triple( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_passthrough( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_standalone( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_standalone_2( core::string_view in, output_ref out );
 
     BOOST_MUSTACHE_DECL void handle_tag( core::string_view tag, output_ref out );
+
+    BOOST_MUSTACHE_DECL void handle_comment_tag( core::string_view tag, output_ref out );
+    BOOST_MUSTACHE_DECL void handle_interpolation_tag( core::string_view tag, output_ref out, bool quoted );
+    BOOST_MUSTACHE_DECL void handle_delimiter_tag( core::string_view tag, output_ref out );
+    BOOST_MUSTACHE_DECL void handle_partial_tag( core::string_view tag, output_ref out );
+
+    BOOST_MUSTACHE_DECL json::value const* lookup_value( core::string_view name ) const;
 
 private:
 
