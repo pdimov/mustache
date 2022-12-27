@@ -26,13 +26,16 @@ private:
     json::array context_stack_;
     json::object partials_;
 
+private:
+
+    BOOST_MUSTACHE_DECL renderer( json::value&& data, json::object&& partials, json::storage_ptr sp );
+
 public:
 
-    BOOST_MUSTACHE_DECL renderer( json::value const& data, json::value const& partials );
     BOOST_MUSTACHE_DECL ~renderer();
 
     template<class T1, class T2> explicit renderer( T1 const& data, T2 const& partials, json::storage_ptr sp = {} ):
-        renderer( json::value_from( data, sp ), json::value_from( partials, sp ) )
+        renderer( json::value_from( data, sp ), json::value_from( partials, sp ).as_object(), sp )
     {
     }
 

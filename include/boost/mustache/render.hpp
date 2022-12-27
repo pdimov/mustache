@@ -12,7 +12,7 @@ namespace boost
 namespace mustache
 {
 
-template<class T1 = json::value, class T2 = json::value> void render( core::string_view tmpl, output_ref out, T1 const& data, T2 const& partials, json::storage_ptr sp = {} )
+template<class T1 = json::value, class T2 = json::object> void render( core::string_view tmpl, output_ref out, T1 const& data, T2 const& partials, json::storage_ptr sp = {} )
 {
     mustache::renderer rd( data, partials, sp );
 

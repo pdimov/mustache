@@ -3,17 +3,21 @@
 // https://www.boost.org/LICENSE_1_0.txt
 
 #include <boost/mustache/renderer.hpp>
+#include <utility>
 
-boost::mustache::renderer::renderer( json::value const& /*data*/, json::value const& /*partials*/ )
+boost::mustache::renderer::renderer( json::value&& data, json::object&& partials, json::storage_ptr sp ):
+    context_stack_( sp ), partials_( std::move( partials ), sp )
 {
+    context_stack_.push_back( std::move( data ) );
 }
 
 boost::mustache::renderer::~renderer()
 {
 }
 
-void boost::mustache::renderer::render( core::string_view /*tmpl*/, output_ref /*out*/ )
+void boost::mustache::renderer::render( core::string_view tmpl, output_ref out )
 {
+    out.output( tmpl );
 }
 
 void boost::mustache::renderer::finish( output_ref /*out*/ )
