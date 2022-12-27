@@ -7,12 +7,35 @@ cmake_minimum_required(VERSION 3.8...3.20)
 
 project(boost_mustache VERSION "${BOOST_SUPERPROJECT_VERSION}" LANGUAGES CXX)
 
-add_library(boost_mustache INTERFACE)
+add_library(boost_mustache
+  src/renderer.cpp
+)
+
 add_library(Boost::mustache ALIAS boost_mustache)
 
-target_include_directories(boost_mustache INTERFACE include)
+target_include_directories(boost_mustache PUBLIC include)
 
-target_compile_features(boost_mustache INTERFACE cxx_std_11)
+target_link_libraries(boost_mustache
+  PUBLIC
+    Boost::config
+    Boost::core
+    Boost::json
+  PRIVATE
+    Boost::assert
+)
+
+target_compile_features(boost_mustache PUBLIC cxx_std_11)
+
+target_compile_definitions(boost_mustache
+  PUBLIC BOOST_MUSTACHE_NO_LIB
+  PRIVATE BOOST_MUSTACHE_SOURCE
+)
+
+if(BUILD_SHARED_LIBS)
+  target_compile_definitions(boost_mustache PUBLIC BOOST_MUSTACHE_DYN_LINK)
+else()
+  target_compile_definitions(boost_mustache PUBLIC BOOST_MUSTACHE_STATIC_LINK)
+endif()
 
 if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
 
