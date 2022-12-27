@@ -19,8 +19,6 @@ boost::mustache::renderer::~renderer()
 
 void boost::mustache::renderer::render_some( core::string_view in, output_ref out )
 {
-    // out.write( tmpl );
-
     while( !in.empty() )
     {
         switch( state_ )
@@ -118,6 +116,9 @@ boost::core::string_view boost::mustache::renderer::handle_state_start_delim( co
     {
         // not a start delimiter
 
+        out.write( whitespace_ );
+        whitespace_.clear();
+
         out.write( { start_delim_.data(), delim_index_ } );
 
         state_ = state_passthrough;
@@ -162,10 +163,17 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core
     {
         // end delimiter
 
-        handle_tag( tag_, out );
-        tag_.clear();
+        if( standalone_ )
+        {
+            state_ = state_standalone;
+        }
+        else
+        {
+            handle_tag( tag_, out );
+            tag_.clear();
 
-        state_ = standalone_? state_standalone: state_passthrough;
+            state_ = state_passthrough;
+        }
     }
     else if( p != end )
     {
@@ -199,6 +207,7 @@ boost::core::string_view boost::mustache::renderer::handle_state_passthrough( co
             ++p;
 
             state_ = state_leading_wsp;
+            whitespace_.clear();
         }
         else
         {
@@ -212,7 +221,7 @@ boost::core::string_view boost::mustache::renderer::handle_state_passthrough( co
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
-boost::core::string_view boost::mustache::renderer::handle_state_standalone( core::string_view in, output_ref /*out*/ )
+boost::core::string_view boost::mustache::renderer::handle_state_standalone( core::string_view in, output_ref out )
 {
     char const* p = in.data();
     char const* end = p + in.size();
@@ -226,11 +235,22 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone( cor
     }
     else if( *p == '\n' )
     {
+        handle_tag( tag_, out );
+        tag_.clear();
+
         ++p;
+
         state_ = state_leading_wsp;
+        whitespace_.clear();
     }
     else
     {
+        out.write( whitespace_ );
+        whitespace_.clear();
+
+        handle_tag( tag_, out );
+        tag_.clear();
+
         state_ = state_passthrough;
     }
 
@@ -246,11 +266,22 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( c
 
     if( *p == '\n' )
     {
+        handle_tag( tag_, out );
+        tag_.clear();
+
         ++p;
+
         state_ = state_leading_wsp;
+        whitespace_.clear();
     }
     else
     {
+        out.write( whitespace_ );
+        whitespace_.clear();
+
+        handle_tag( tag_, out );
+        tag_.clear();
+
         out.write( "\r" );
         state_ = state_passthrough;
     }
