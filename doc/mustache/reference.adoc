@@ -1,0 +1,23 @@
+////
+Copyright 2022 Peter Dimov
+Distributed under the Boost Software License, Version 1.0.
+https://www.boost.org/LICENSE_1_0.txt
+////
+
+[#reference]
+# Reference
+:idprefix: ref_
+
+## <boost/mustache/mustache.hpp>
+
+### Synopsis
+
+```
+namespace boost {
+namespace mustache {
+
+// ...
+
+} // namespace mustache
+} // namespace boost
+```

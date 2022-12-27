@@ -1,0 +1,23 @@
+////
+Copyright 2022 Peter Dimov
+Distributed under the Boost Software License, Version 1.0.
+https://www.boost.org/LICENSE_1_0.txt
+////
+
+# Mustache: An Implementation of Mustache Templates in {cpp}11
+Peter Dimov
+:toc: left
+:toclevels: 4
+:idprefix:
+:listing-caption: Code Example
+:docinfo: private-footer
+:source-highlighter: rouge
+:source-language: c++
+
+:leveloffset: +1
+
+include::mustache/overview.adoc[]
+include::mustache/reference.adoc[]
+include::mustache/copyright.adoc[]
+
+:leveloffset: -1
