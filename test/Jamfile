@@ -25,3 +25,4 @@ run render_comment.cpp ;
 
 run spec.cpp : : specs/comments.json : : spec_comments ;
 run spec.cpp : : specs/interpolation.json : : spec_interpolation ;
+run spec.cpp : : specs/sections.json : : spec_sections ;

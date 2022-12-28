@@ -29,7 +29,7 @@ private:
     template<class St> static void string_output( void * out, core::string_view sv )
     {
         St& st = *static_cast<St*>( out );
-        st.append( sv.data(), sv.size() );
+        st.append( sv.data(), sv.data() + sv.size() );
     }
 
     template<class Os> static void stream_output( void * out, core::string_view sv )
@@ -40,7 +40,8 @@ private:
 
 public:
 
-    output_ref( std::string& st ): out_( &st ), fptr_( &string_output<std::string> )
+    template<class St, class = void, class En = typename std::enable_if<std::is_same<typename St::value_type, char>::value>::type>
+    output_ref( St& st ): out_( &st ), fptr_( &string_output<St> )
     {
     }
 

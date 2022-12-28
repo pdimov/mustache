@@ -65,31 +65,6 @@ void boost::mustache::renderer::render_some( core::string_view in, output_ref ou
             in = handle_state_standalone_2( in, out );
             break;
 
-        case state_section:
-
-            in = handle_state_section( in, out );
-            break;
-
-        case state_section_start_delim:
-
-            in = handle_state_section_start_delim( in, out );
-            break;
-
-        case state_section_tag:
-
-            in = handle_state_section_tag( in, out );
-            break;
-
-        case state_section_end_delim:
-
-            in = handle_state_section_end_delim( in, out );
-            break;
-
-        case state_section_end_triple:
-
-            in = handle_state_section_end_triple( in, out );
-            break;
-
         default:
 
             BOOST_ASSERT( false );
@@ -100,6 +75,11 @@ void boost::mustache::renderer::render_some( core::string_view in, output_ref ou
 
 boost::core::string_view boost::mustache::renderer::handle_state_leading_wsp( core::string_view in, output_ref out )
 {
+    if( in_section_ )
+    {
+        out = section_text_;
+    }
+
     char const* p = in.data();
     char const* end = p + in.size();
 
@@ -131,8 +111,26 @@ boost::core::string_view boost::mustache::renderer::handle_state_leading_wsp( co
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+void boost::mustache::renderer::finish_state_leading_wsp( output_ref out )
+{
+    if( in_section_ )
+    {
+        return;
+    }
+
+    out.write( whitespace_ );
+    whitespace_.clear();
+
+    state_ = state_passthrough;
+}
+
 boost::core::string_view boost::mustache::renderer::handle_state_start_delim( core::string_view in, output_ref out )
 {
+    if( in_section_ )
+    {
+        out = section_text_;
+    }
+
     char const* p = in.data();
     char const* end = p + in.size();
 
@@ -164,6 +162,21 @@ boost::core::string_view boost::mustache::renderer::handle_state_start_delim( co
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+void boost::mustache::renderer::finish_state_start_delim( output_ref out )
+{
+    if( in_section_ )
+    {
+        return;
+    }
+
+    out.write( whitespace_ );
+    whitespace_.clear();
+
+    out.write( { start_delim_.data(), delim_index_ } );
+
+    state_ = state_passthrough;
+}
+
 boost::core::string_view boost::mustache::renderer::handle_state_tag( core::string_view in, output_ref /*out*/ )
 {
     char const* p = in.data();
@@ -185,6 +198,10 @@ boost::core::string_view boost::mustache::renderer::handle_state_tag( core::stri
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+void boost::mustache::renderer::finish_state_tag( output_ref /*out*/ )
+{
+}
+
 static bool is_tag_standalone( boost::core::string_view tag )
 {
     if( tag.empty() )
@@ -194,11 +211,18 @@ static bool is_tag_standalone( boost::core::string_view tag )
 
     char ch = tag.front();
 
-    return ch == '!' || ch == '=' || ch == '>' || ch == '#' || ch == '^';
+    return ch == '!' || ch == '=' || ch == '>' || ch == '#' || ch == '^' || ch == '/';
 }
 
 boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core::string_view in, output_ref out )
 {
+    output_ref out2( out );
+
+    if( in_section_ )
+    {
+        out = section_text_;
+    }
+
     char const* p = in.data();
     char const* end = p + in.size();
 
@@ -227,7 +251,7 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core
 
             state_ = state_passthrough;
 
-            handle_tag( tag_, out );
+            handle_tag( tag_, out2 );
             tag_.clear();
         }
     }
@@ -243,8 +267,19 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+void boost::mustache::renderer::finish_state_end_delim( output_ref /*out*/ )
+{
+}
+
 boost::core::string_view boost::mustache::renderer::handle_state_end_triple( core::string_view in, output_ref out )
 {
+    output_ref out2( out );
+
+    if( in_section_ )
+    {
+        out = section_text_;
+    }
+
     char const* p = in.data();
     char const* end = p + in.size();
 
@@ -267,15 +302,43 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_triple( cor
 
         state_ = state_passthrough;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out2 );
         tag_.clear();
     }
 
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+void boost::mustache::renderer::finish_state_end_triple( output_ref out )
+{
+    if( in_section_ )
+    {
+        return;
+    }
+
+    if( standalone_ && is_tag_standalone( tag_ ) )
+    {
+        finish_state_standalone( out );
+    }
+    else
+    {
+        out.write( whitespace_ );
+        whitespace_.clear();
+
+        state_ = state_passthrough;
+
+        handle_tag( tag_, out );
+        tag_.clear();
+    }
+}
+
 boost::core::string_view boost::mustache::renderer::handle_state_passthrough( core::string_view in, output_ref out )
 {
+    if( in_section_ )
+    {
+        out = section_text_;
+    }
+
     char const* p = in.data();
     char const* end = p + in.size();
 
@@ -308,8 +371,19 @@ boost::core::string_view boost::mustache::renderer::handle_state_passthrough( co
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+void boost::mustache::renderer::finish_state_passthrough( output_ref /*out*/ )
+{
+}
+
 boost::core::string_view boost::mustache::renderer::handle_state_standalone( core::string_view in, output_ref out )
 {
+    output_ref out2( out );
+
+    if( in_section_ )
+    {
+        out = section_text_;
+    }
+
     char const* p = in.data();
     char const* end = p + in.size();
 
@@ -327,7 +401,7 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone( cor
 
         state_ = state_leading_wsp;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out2 );
         tag_.clear();
     }
     else
@@ -337,15 +411,32 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone( cor
 
         state_ = state_passthrough;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out2 );
         tag_.clear();
     }
 
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+void boost::mustache::renderer::finish_state_standalone( output_ref out )
+{
+    whitespace_.clear();
+
+    state_ = state_leading_wsp;
+
+    handle_tag( tag_, out );
+    tag_.clear();
+}
+
 boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( core::string_view in, output_ref out )
 {
+    output_ref out2( out );
+
+    if( in_section_ )
+    {
+        out = section_text_;
+    }
+
     char const* p = in.data();
     char const* end = p + in.size();
 
@@ -358,7 +449,7 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( c
 
         state_ = state_leading_wsp;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out2 );
         tag_.clear();
     }
     else
@@ -368,7 +459,7 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( c
 
         state_ = state_passthrough;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out2 );
         tag_.clear();
 
         out.write( "\r" );
@@ -377,87 +468,20 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( c
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
-boost::core::string_view boost::mustache::renderer::handle_state_section( core::string_view in, output_ref /*out*/ )
+void boost::mustache::renderer::finish_state_standalone_2( output_ref out )
 {
-    char const* p = in.data();
-    char const* end = p + in.size();
+    out.write( whitespace_ );
+    whitespace_.clear();
 
-    while( p != end && *p != start_delim_[0] )
-    {
-        ++p;
-    }
+    state_ = state_passthrough;
 
-    section_text_.append( in.data(), p );
+    handle_tag( tag_, out );
+    tag_.clear();
 
-    if( p != end )
-    {
-        state_ = state_section_start_delim;
-        delim_index_ = 0;
-    }
-
-    return { p, static_cast<std::size_t>( end - p ) };
+    out.write( "\r" );
 }
 
-boost::core::string_view boost::mustache::renderer::handle_state_section_start_delim( core::string_view in, output_ref /*out*/ )
-{
-    char const* p = in.data();
-    char const* end = p + in.size();
-
-    while( delim_index_ < start_delim_.size() && p != end && *p == start_delim_[ delim_index_ ] )
-    {
-        ++p;
-        ++delim_index_;
-    }
-
-    if( delim_index_ == start_delim_.size() )
-    {
-        // start delimiter
-
-        state_ = state_section_tag;
-        tag_.clear();
-    }
-    else if( p != end )
-    {
-        // not a start delimiter
-
-        section_text_.append( start_delim_.data(), start_delim_.data() + delim_index_ );
-
-        state_ = state_section;
-    }
-
-    return { p, static_cast<std::size_t>( end - p ) };
-}
-
-boost::core::string_view boost::mustache::renderer::handle_state_section_tag( core::string_view in, output_ref /*out*/ )
-{
-    char const* p = in.data();
-    char const* end = p + in.size();
-
-    while( p != end && *p != end_delim_[0] )
-    {
-        ++p;
-    }
-
-    tag_.append( in.data(), p );
-
-    if( p != end )
-    {
-        state_ = state_section_end_delim;
-        delim_index_ = 0;
-    }
-
-    return { p, static_cast<std::size_t>( end - p ) };
-}
-
-static bool is_section_tag( boost::core::string_view tag )
-{
-    return !tag.empty() && ( tag.front() == '#' || tag.front() == '^' );
-}
-
-static bool is_end_section_tag( boost::core::string_view tag )
-{
-    return !tag.empty() && tag.front() == '/';
-}
+//
 
 static boost::core::string_view trim_leading_whitespace( boost::core::string_view sv )
 {
@@ -493,163 +517,100 @@ static boost::core::string_view trim_whitespace( boost::core::string_view sv )
     return sv;
 }
 
-void boost::mustache::renderer::handle_state_section_end_delim_( output_ref out )
-{
-    bool ends = false;
-
-    if( is_section_tag( tag_ ) )
-    {
-        auto sn = trim_whitespace( tag_.subview( 1 ) );
-
-        section_stack_.push_back( sn );
-    }
-    else if( is_end_section_tag( tag_ ) )
-    {
-        auto sn = trim_whitespace( tag_.subview( 1 ) );
-
-        BOOST_ASSERT( !section_stack_.empty() );
-
-        if( section_stack_.back() == sn )
-        {
-            section_stack_.pop_back();
-        }
-
-        if( section_stack_.empty() )
-        {
-            ends = true;
-        }
-    }
-
-    if( !ends )
-    {
-        section_text_.append( start_delim_ );
-        section_text_.append( tag_ );
-        section_text_.append( end_delim_ );
-
-        state_ = state_section;
-    }
-    else
-    {
-        state_ = state_passthrough;
-
-        render_section( out );
-
-        state_ = state_passthrough;
-    }
-}
-
-boost::core::string_view boost::mustache::renderer::handle_state_section_end_delim( core::string_view in, output_ref out )
-{
-    char const* p = in.data();
-    char const* end = p + in.size();
-
-    while( delim_index_ < end_delim_.size() && p != end && *p == end_delim_[ delim_index_ ] )
-    {
-        ++p;
-        ++delim_index_;
-    }
-
-    if( delim_index_ == end_delim_.size() )
-    {
-        // end delimiter
-
-        if( end_delim_ == "}}" && !tag_.empty() && tag_.front() == '{' )
-        {
-            state_ = state_section_end_triple;
-        }
-        else
-        {
-            handle_state_section_end_delim_( out );
-        }
-    }
-    else if( p != end )
-    {
-        // not an end delimiter
-
-        tag_.append( end_delim_.data(), end_delim_.data() + delim_index_ );
-
-        state_ = state_section_tag;
-    }
-
-    return { p, static_cast<std::size_t>( end - p ) };
-}
-
-boost::core::string_view boost::mustache::renderer::handle_state_section_end_triple( core::string_view in, output_ref out )
-{
-    char const* p = in.data();
-    char const* end = p + in.size();
-
-    BOOST_ASSERT( p != end );
-
-    if( *p == '}' )
-    {
-        ++p;
-        tag_.push_back( '}' );
-    }
-
-    handle_state_section_end_delim_( out );
-
-    return { p, static_cast<std::size_t>( end - p ) };
-}
-
 //
 
 void boost::mustache::renderer::handle_tag( core::string_view tag, output_ref out )
 {
-    if( tag.empty() )
+    char ch = tag.empty()? '\0': tag.front();
+
+    if( in_section_ )
     {
+        bool ends = false;
+
+        if( ch == '#' || ch == '^' )
+        {
+            auto sn = trim_whitespace( tag.substr( 1 ) );
+            section_stack_.push_back( sn );
+        }
+        else if( ch == '/' )
+        {
+            auto sn = trim_whitespace( tag.substr( 1 ) );
+
+            BOOST_ASSERT( !section_stack_.empty() );
+
+            if( section_stack_.back() == sn )
+            {
+                section_stack_.pop_back();
+            }
+
+            if( section_stack_.empty() )
+            {
+                ends = true;
+            }
+        }
+
+        if( !ends )
+        {
+            section_text_.append( start_delim_ );
+            section_text_.append( tag_ );
+            section_text_.append( end_delim_ );
+        }
+        else
+        {
+            in_section_ = false;
+            render_section( out );
+        }
+    }
+    else
+    {
+        if( ch == '!' )
+        {
+            tag.remove_prefix( 1 );
+            return handle_comment_tag( tag, out );
+        }
+
+        if( ch == '>' )
+        {
+            tag.remove_prefix( 1 );
+            return handle_partial_tag( tag, out );
+        }
+
+        if( ch == '#' )
+        {
+            tag.remove_prefix( 1 );
+            return handle_section_tag( tag, out, false );
+        }
+
+        if( ch == '^' )
+        {
+            tag.remove_prefix( 1 );
+            return handle_section_tag( tag, out, true );
+        }
+
+        if( ch == '&' )
+        {
+            tag.remove_prefix( 1 );
+            return handle_interpolation_tag( tag, out, false );
+        }
+
+        if( ch == '=' && tag.size() >= 2 && tag.back() == '=' )
+        {
+            tag.remove_prefix( 1 );
+            tag.remove_suffix( 1 );
+
+            return handle_delimiter_tag( tag, out );
+        }
+
+        if( ch == '{' && tag.size() >= 2 && tag.back() == '}' )
+        {
+            tag.remove_prefix( 1 );
+            tag.remove_suffix( 1 );
+
+            return handle_interpolation_tag( tag, out, false );
+        }
+
         return handle_interpolation_tag( tag, out, true );
     }
-
-    char ch = tag.front();
-
-    if( ch == '!' )
-    {
-        tag.remove_prefix( 1 );
-        return handle_comment_tag( tag, out );
-    }
-
-    if( ch == '>' )
-    {
-        tag.remove_prefix( 1 );
-        return handle_partial_tag( tag, out );
-    }
-
-    if( ch == '#' )
-    {
-        tag.remove_prefix( 1 );
-        return handle_section_tag( tag, out, false );
-    }
-
-    if( ch == '^' )
-    {
-        tag.remove_prefix( 1 );
-        return handle_section_tag( tag, out, true );
-    }
-
-    if( ch == '&' )
-    {
-        tag.remove_prefix( 1 );
-        return handle_interpolation_tag( tag, out, false );
-    }
-
-    if( ch == '=' && tag.size() >= 2 && tag.back() == '=' )
-    {
-        tag.remove_prefix( 1 );
-        tag.remove_suffix( 1 );
-
-        return handle_delimiter_tag( tag, out );
-    }
-
-    if( ch == '{' && tag.size() >= 2 && tag.back() == '}' )
-    {
-        tag.remove_prefix( 1 );
-        tag.remove_suffix( 1 );
-
-        return handle_interpolation_tag( tag, out, false );
-    }
-
-    return handle_interpolation_tag( tag, out, true );
 }
 
 void boost::mustache::renderer::handle_comment_tag( core::string_view /*tag*/, output_ref /*out*/ )
@@ -795,7 +756,9 @@ void boost::mustache::renderer::handle_section_tag( core::string_view tag, outpu
     inverted_ = inverted;
     section_context_ = lookup_value( tag );
 
-    state_ = state_section;
+    section_text_.clear();
+
+    in_section_ = true;
 }
 
 void boost::mustache::renderer::handle_delimiter_tag( core::string_view /*tag*/, output_ref /*out*/ )
@@ -923,25 +886,32 @@ void boost::mustache::renderer::render_section( output_ref out )
         if( p == 0 || !is_value_true( *p ) )
         {
             json::string tmp( section_text_, section_text_.storage() );
+
             render_some( tmp, out );
+            finish( out );
         }
     }
-    else if( p != 0 )
+    else
     {
-        json::value const& jv = *p;
-
-        if( is_value_true( jv ) )
+        if( p != 0 && is_value_true( *p ) )
         {
             json::string tmp( section_text_, section_text_.storage() );
+            json::value const jv( *p, p->storage() );
 
             if( jv.is_array() )
             {
                 context_stack_.push_back( {} );
 
+                auto st = state_;
+
                 for( auto const& item: jv.get_array() )
                 {
                     context_stack_.back() = item;
+
                     render_some( tmp, out );
+                    finish( out );
+
+                    state_ = st;
                 }
 
                 context_stack_.pop_back();
@@ -951,6 +921,7 @@ void boost::mustache::renderer::render_section( output_ref out )
                 context_stack_.push_back( jv );
 
                 render_some( tmp, out );
+                finish( out );
 
                 context_stack_.pop_back();
             }
@@ -960,6 +931,53 @@ void boost::mustache::renderer::render_section( output_ref out )
 
 //
 
-void boost::mustache::renderer::finish( output_ref /*out*/ )
+void boost::mustache::renderer::finish( output_ref out )
 {
+    switch( state_ )
+    {
+    case state_leading_wsp:
+
+        finish_state_leading_wsp( out );
+        break;
+
+    case state_start_delim:
+
+        finish_state_start_delim( out );
+        break;
+
+    case state_tag:
+
+        finish_state_tag( out );
+        break;
+
+    case state_end_delim:
+
+        finish_state_end_delim( out );
+        break;
+
+    case state_end_triple:
+
+        finish_state_end_triple( out );
+        break;
+
+    case state_passthrough:
+
+        finish_state_passthrough( out );
+        break;
+
+    case state_standalone:
+
+        finish_state_standalone( out );
+        break;
+
+    case state_standalone_2:
+
+        finish_state_standalone_2( out );
+        break;
+
+    default:
+
+        BOOST_ASSERT( false );
+        return;
+    }
 }

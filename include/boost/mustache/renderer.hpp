@@ -34,11 +34,6 @@ private:
         state_passthrough,
         state_standalone,
         state_standalone_2,
-        state_section,
-        state_section_start_delim,
-        state_section_tag,
-        state_section_end_delim,
-        state_section_end_triple,
     };
 
 private:
@@ -47,8 +42,10 @@ private:
     json::object partials_;
 
     state state_ = state_leading_wsp;
-    bool standalone_ = false;
 
+    bool in_section_ = false;
+
+    bool standalone_ = false;
     json::string whitespace_;
 
     json::string start_delim_;
@@ -74,13 +71,15 @@ private:
     BOOST_MUSTACHE_DECL core::string_view handle_state_passthrough( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_standalone( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_standalone_2( core::string_view in, output_ref out );
-    BOOST_MUSTACHE_DECL core::string_view handle_state_section( core::string_view in, output_ref out );
-    BOOST_MUSTACHE_DECL core::string_view handle_state_section_start_delim( core::string_view in, output_ref out );
-    BOOST_MUSTACHE_DECL core::string_view handle_state_section_tag( core::string_view in, output_ref out );
-    BOOST_MUSTACHE_DECL core::string_view handle_state_section_end_delim( core::string_view in, output_ref out );
-    BOOST_MUSTACHE_DECL core::string_view handle_state_section_end_triple( core::string_view in, output_ref out );
 
-    BOOST_MUSTACHE_DECL void handle_state_section_end_delim_( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_leading_wsp( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_start_delim( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_tag( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_end_delim( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_end_triple( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_passthrough( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_standalone( output_ref out );
+    BOOST_MUSTACHE_DECL void finish_state_standalone_2( output_ref out );
 
     BOOST_MUSTACHE_DECL void handle_tag( core::string_view tag, output_ref out );
 
