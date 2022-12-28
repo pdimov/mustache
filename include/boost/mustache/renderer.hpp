@@ -43,22 +43,42 @@ private:
 
     state state_ = state_leading_wsp;
 
+    // true when parsing the contents of a section tag
     bool in_section_ = false;
 
-    bool standalone_ = false;
+    // whitespace buffered by state_leading_wsp
     json::string whitespace_;
 
+    // whether the tag has been preceded by only whitespace;
+    // set on entering state_start_delim
+    bool standalone_ = false;
+
+    // start delimiter, default '{{'
     json::string start_delim_;
+
+    // end delimiter, default '}}'
     json::string end_delim_;
 
+    // current delimiter position in state_start_delim and
+    // state_end_delim
     std::size_t delim_index_ = 0;
 
+    // tag contents accumulated by state_tag
     json::string tag_;
 
+    // section state, only valid when in_section_
+
+    // stack of currently encountered open section tags
     json::array section_stack_;
+
+    // whether the current section is inverted
     bool inverted_ = false;
+
+    // the current context (e.g. for "{{#x.y}}",
+    // a pointer to the lookup result of "x.y"
     json::value const * section_context_ = nullptr;
 
+    // buffered section contents until its closing tag
     json::string section_text_;
 
 private:
