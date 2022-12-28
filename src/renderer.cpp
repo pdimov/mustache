@@ -73,6 +73,9 @@ void boost::mustache::renderer::render_some( core::string_view in, output_ref ou
     }
 }
 
+// state_leading_wsp consumes initial whitespace at the beginning of the line,
+// and accumulates it into whitespace_
+
 boost::core::string_view boost::mustache::renderer::handle_state_leading_wsp( core::string_view in, output_ref out )
 {
     if( in_section_ )
@@ -111,18 +114,24 @@ boost::core::string_view boost::mustache::renderer::handle_state_leading_wsp( co
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+// finish_state_leading_wsp is called when input ends while in state_whitespace
+
 void boost::mustache::renderer::finish_state_leading_wsp( output_ref out )
 {
     if( in_section_ )
     {
-        return;
+        in_section_ = false;
+    }
+    else
+    {
+        out.write( whitespace_ );
     }
 
-    out.write( whitespace_ );
     whitespace_.clear();
-
     state_ = state_passthrough;
 }
+
+// state_start_delim consumes the start delimiter ('{{' by default)
 
 boost::core::string_view boost::mustache::renderer::handle_state_start_delim( core::string_view in, output_ref out )
 {
@@ -149,33 +158,39 @@ boost::core::string_view boost::mustache::renderer::handle_state_start_delim( co
     }
     else if( p != end )
     {
-        // not a start delimiter
+        // not a start delimiter, emit consumed input
 
         out.write( whitespace_ );
-        whitespace_.clear();
-
         out.write( { start_delim_.data(), delim_index_ } );
 
+        whitespace_.clear();
         state_ = state_passthrough;
     }
 
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+// finish_state_start_delim is called when input ends while in state_start_delim
+// e.g. "   {"
+
 void boost::mustache::renderer::finish_state_start_delim( output_ref out )
 {
     if( in_section_ )
     {
-        return;
+        in_section_ = false;
+    }
+    else
+    {
+        out.write( whitespace_ );
+        out.write( { start_delim_.data(), delim_index_ } );
     }
 
-    out.write( whitespace_ );
     whitespace_.clear();
-
-    out.write( { start_delim_.data(), delim_index_ } );
-
     state_ = state_passthrough;
 }
+
+// state_tag consumes the tag (the portion between the start delimiter and
+//   the end delimiter) and accumulates it into tag_
 
 boost::core::string_view boost::mustache::renderer::handle_state_tag( core::string_view in, output_ref /*out*/ )
 {
@@ -198,8 +213,22 @@ boost::core::string_view boost::mustache::renderer::handle_state_tag( core::stri
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
-void boost::mustache::renderer::finish_state_tag( output_ref /*out*/ )
+// finish_state_tag is called when input ends while in state_tag
+// e.g. "  {{ something"
+
+void boost::mustache::renderer::finish_state_tag( output_ref out )
 {
+    if( in_section_ )
+    {
+        in_section_ = false;
+    }
+    else
+    {
+        out.write( whitespace_ );
+    }
+
+    whitespace_.clear();
+    state_ = state_passthrough;
 }
 
 static bool is_tag_standalone( boost::core::string_view tag )
@@ -213,6 +242,8 @@ static bool is_tag_standalone( boost::core::string_view tag )
 
     return ch == '!' || ch == '=' || ch == '>' || ch == '#' || ch == '^' || ch == '/';
 }
+
+// state_end_delim consumes the end delimiter ('}}' by default)
 
 boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core::string_view in, output_ref out )
 {
@@ -267,9 +298,27 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
-void boost::mustache::renderer::finish_state_end_delim( output_ref /*out*/ )
+// finish_state_end_delim is called when input ends while in state_end_delim
+// e.g. "  {{ something }"
+
+void boost::mustache::renderer::finish_state_end_delim( output_ref out )
 {
+    if( in_section_ )
+    {
+        in_section_ = false;
+    }
+    else
+    {
+        out.write( whitespace_ );
+    }
+
+    whitespace_.clear();
+    state_ = state_passthrough;
 }
+
+// state_end_triple occurs when the tag is "{{{ something }}"
+// we need to check whether it's followed by another '}' in order
+// to handle triple mustaches properly
 
 boost::core::string_view boost::mustache::renderer::handle_state_end_triple( core::string_view in, output_ref out )
 {
@@ -309,10 +358,18 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_triple( cor
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+// finish_state_end_triple is called when input ends while in state_end_triple
+// e.g. "   {{{ x }}"
+
 void boost::mustache::renderer::finish_state_end_triple( output_ref out )
 {
     if( in_section_ )
     {
+        in_section_ = false;
+
+        whitespace_.clear();
+        state_ = state_passthrough;
+
         return;
     }
 
@@ -331,6 +388,9 @@ void boost::mustache::renderer::finish_state_end_triple( output_ref out )
         tag_.clear();
     }
 }
+
+// state_passthrough consumes literal input and emits it immediately,
+// without buffering
 
 boost::core::string_view boost::mustache::renderer::handle_state_passthrough( core::string_view in, output_ref out )
 {
@@ -371,9 +431,18 @@ boost::core::string_view boost::mustache::renderer::handle_state_passthrough( co
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+// finish_state_passthrough is called when input ends while in state_passthrough
+// almost nothing to do here, except reset in_section_
+
 void boost::mustache::renderer::finish_state_passthrough( output_ref /*out*/ )
 {
+    in_section_ = false;
 }
+
+// state_standalone occurs at the end of a potentially standalone tag
+// e.g. "   {{! standalone tag }}"
+// we need to check whether the tag is followed by either \r\n or \n,
+// and if so, discard the leading whitespace and the line ending
 
 boost::core::string_view boost::mustache::renderer::handle_state_standalone( core::string_view in, output_ref out )
 {
@@ -418,6 +487,8 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone( cor
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+// finish_state_standalone is called when input ends while in state_standalone
+
 void boost::mustache::renderer::finish_state_standalone( output_ref out )
 {
     whitespace_.clear();
@@ -426,7 +497,12 @@ void boost::mustache::renderer::finish_state_standalone( output_ref out )
 
     handle_tag( tag_, out );
     tag_.clear();
+
+    in_section_ = false;
 }
+
+// state_standalone_2 occurs at the end of a potentially standalone tag
+// followed by \r
 
 boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( core::string_view in, output_ref out )
 {
@@ -468,17 +544,32 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( c
     return { p, static_cast<std::size_t>( end - p ) };
 }
 
+// finish_state_standalone_2 is called when input ends while in state_standalone_2
+
 void boost::mustache::renderer::finish_state_standalone_2( output_ref out )
 {
-    out.write( whitespace_ );
-    whitespace_.clear();
+    if( in_section_ )
+    {
+        whitespace_.clear();
+        state_ = state_passthrough;
 
-    state_ = state_passthrough;
+        handle_tag( tag_, out );
+        tag_.clear();
 
-    handle_tag( tag_, out );
-    tag_.clear();
+        in_section_ = false;
+    }
+    else
+    {
+        out.write( whitespace_ );
 
-    out.write( "\r" );
+        whitespace_.clear();
+        state_ = state_passthrough;
+
+        handle_tag( tag_, out );
+        tag_.clear();
+
+        out.write( "\r" );
+    }
 }
 
 //
