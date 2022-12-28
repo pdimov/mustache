@@ -33,7 +33,12 @@ private:
         state_end_triple,
         state_passthrough,
         state_standalone,
-        state_standalone_2
+        state_standalone_2,
+        state_section,
+        state_section_start_delim,
+        state_section_tag,
+        state_section_end_delim,
+        state_section_end_triple,
     };
 
 private:
@@ -53,6 +58,12 @@ private:
 
     json::string tag_;
 
+    json::array section_stack_;
+    bool inverted_ = false;
+    json::value const * section_context_ = nullptr;
+
+    json::string section_text_;
+
 private:
 
     BOOST_MUSTACHE_DECL core::string_view handle_state_leading_wsp( core::string_view in, output_ref out );
@@ -63,15 +74,25 @@ private:
     BOOST_MUSTACHE_DECL core::string_view handle_state_passthrough( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_standalone( core::string_view in, output_ref out );
     BOOST_MUSTACHE_DECL core::string_view handle_state_standalone_2( core::string_view in, output_ref out );
+    BOOST_MUSTACHE_DECL core::string_view handle_state_section( core::string_view in, output_ref out );
+    BOOST_MUSTACHE_DECL core::string_view handle_state_section_start_delim( core::string_view in, output_ref out );
+    BOOST_MUSTACHE_DECL core::string_view handle_state_section_tag( core::string_view in, output_ref out );
+    BOOST_MUSTACHE_DECL core::string_view handle_state_section_end_delim( core::string_view in, output_ref out );
+    BOOST_MUSTACHE_DECL core::string_view handle_state_section_end_triple( core::string_view in, output_ref out );
+
+    BOOST_MUSTACHE_DECL void handle_state_section_end_delim_( output_ref out );
 
     BOOST_MUSTACHE_DECL void handle_tag( core::string_view tag, output_ref out );
 
     BOOST_MUSTACHE_DECL void handle_comment_tag( core::string_view tag, output_ref out );
     BOOST_MUSTACHE_DECL void handle_interpolation_tag( core::string_view tag, output_ref out, bool quoted );
+    BOOST_MUSTACHE_DECL void handle_section_tag( core::string_view tag, output_ref out, bool inverted );
     BOOST_MUSTACHE_DECL void handle_delimiter_tag( core::string_view tag, output_ref out );
     BOOST_MUSTACHE_DECL void handle_partial_tag( core::string_view tag, output_ref out );
 
     BOOST_MUSTACHE_DECL json::value const* lookup_value( core::string_view name ) const;
+
+    BOOST_MUSTACHE_DECL void render_section( output_ref out );
 
 private:
 
