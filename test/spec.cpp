@@ -4,11 +4,14 @@
 
 #include <boost/mustache/render.hpp>
 #include <boost/json.hpp>
+#include <boost/core/detail/lwt_unattended.hpp>
 #include <iostream>
 #include <fstream>
 
 int main( int ac, char const* av[] )
 {
+    boost::core::detail::lwt_unattended();
+
     if( ac < 2 )
     {
         std::cerr << "Usage: spec <spec.json>" << std::endl;
