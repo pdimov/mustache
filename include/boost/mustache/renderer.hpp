@@ -81,6 +81,11 @@ private:
     // buffered section contents until its closing tag
     json::string section_text_;
 
+    // partial state
+
+    // leading whitespace before the standalone partial tag
+    json::string partial_lwsp_;
+
 private:
 
     BOOST_MUSTACHE_DECL core::string_view handle_state_leading_wsp( core::string_view in, output_ref out );
@@ -101,13 +106,13 @@ private:
     BOOST_MUSTACHE_DECL void finish_state_standalone( output_ref out );
     BOOST_MUSTACHE_DECL void finish_state_standalone_2( output_ref out );
 
-    BOOST_MUSTACHE_DECL void handle_tag( core::string_view tag, output_ref out );
+    BOOST_MUSTACHE_DECL void handle_tag( core::string_view tag, output_ref out, core::string_view old_wsp );
 
     BOOST_MUSTACHE_DECL void handle_comment_tag( core::string_view tag, output_ref out );
     BOOST_MUSTACHE_DECL void handle_interpolation_tag( core::string_view tag, output_ref out, bool quoted );
     BOOST_MUSTACHE_DECL void handle_section_tag( core::string_view tag, output_ref out, bool inverted );
     BOOST_MUSTACHE_DECL void handle_delimiter_tag( core::string_view tag, output_ref out );
-    BOOST_MUSTACHE_DECL void handle_partial_tag( core::string_view tag, output_ref out );
+    BOOST_MUSTACHE_DECL void handle_partial_tag( core::string_view tag, output_ref out, core::string_view old_wsp );
 
     BOOST_MUSTACHE_DECL json::value const* lookup_value( core::string_view name ) const;
 

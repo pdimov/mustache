@@ -10,7 +10,7 @@
 boost::mustache::renderer::renderer( json::value&& data, json::object&& partials, json::storage_ptr sp ):
     context_stack_( sp ), partials_( std::move( partials ), sp ),
     whitespace_( sp ), start_delim_( "{{", sp ), end_delim_( "}}", sp ),
-    tag_( sp ), section_stack_( sp ), section_text_( sp )
+    tag_( sp ), section_stack_( sp ), section_text_( sp ), partial_lwsp_( sp )
 {
     context_stack_.push_back( std::move( data ) );
 }
@@ -105,8 +105,8 @@ boost::core::string_view boost::mustache::renderer::handle_state_leading_wsp( co
         else
         {
             out.write( whitespace_ );
-            whitespace_.clear();
 
+            whitespace_.clear();
             state_ = state_passthrough;
         }
     }
@@ -122,8 +122,11 @@ void boost::mustache::renderer::finish_state_leading_wsp( output_ref out )
     {
         in_section_ = false;
     }
-    else
+    else if( whitespace_ != partial_lwsp_ )
     {
+        // if all whitespace comes from the partial indentation,
+        // we shouldn't be outputting it at partial end
+
         out.write( whitespace_ );
     }
 
@@ -278,11 +281,11 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core
         else
         {
             out.write( whitespace_ );
-            whitespace_.clear();
 
+            whitespace_.clear();
             state_ = state_passthrough;
 
-            handle_tag( tag_, out2 );
+            handle_tag( tag_, out2, "" );
             tag_.clear();
         }
     }
@@ -347,11 +350,11 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_triple( cor
     else
     {
         out.write( whitespace_ );
-        whitespace_.clear();
 
+        whitespace_.clear();
         state_ = state_passthrough;
 
-        handle_tag( tag_, out2 );
+        handle_tag( tag_, out2, "" );
         tag_.clear();
     }
 
@@ -380,11 +383,11 @@ void boost::mustache::renderer::finish_state_end_triple( output_ref out )
     else
     {
         out.write( whitespace_ );
-        whitespace_.clear();
 
+        whitespace_.clear();
         state_ = state_passthrough;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out, "" );
         tag_.clear();
     }
 }
@@ -417,7 +420,7 @@ boost::core::string_view boost::mustache::renderer::handle_state_passthrough( co
             ++p;
 
             state_ = state_leading_wsp;
-            whitespace_.clear();
+            whitespace_ = partial_lwsp_;
         }
         else
         {
@@ -466,21 +469,23 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone( cor
     else if( *p == '\n' )
     {
         ++p;
-        whitespace_.clear();
+
+        json::string old_wsp( whitespace_, whitespace_.storage() );
 
         state_ = state_leading_wsp;
+        whitespace_ = partial_lwsp_;
 
-        handle_tag( tag_, out2 );
+        handle_tag( tag_, out2, old_wsp );
         tag_.clear();
     }
     else
     {
         out.write( whitespace_ );
-        whitespace_.clear();
 
+        whitespace_.clear();
         state_ = state_passthrough;
 
-        handle_tag( tag_, out2 );
+        handle_tag( tag_, out2, "" );
         tag_.clear();
     }
 
@@ -491,11 +496,12 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone( cor
 
 void boost::mustache::renderer::finish_state_standalone( output_ref out )
 {
-    whitespace_.clear();
+    json::string old_wsp( whitespace_, whitespace_.storage() );
 
     state_ = state_leading_wsp;
+    whitespace_ = partial_lwsp_;
 
-    handle_tag( tag_, out );
+    handle_tag( tag_, out, old_wsp );
     tag_.clear();
 
     in_section_ = false;
@@ -521,21 +527,23 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone_2( c
     if( *p == '\n' )
     {
         ++p;
-        whitespace_.clear();
+
+        json::string old_wsp( whitespace_, whitespace_.storage() );
 
         state_ = state_leading_wsp;
+        whitespace_ = partial_lwsp_;
 
-        handle_tag( tag_, out2 );
+        handle_tag( tag_, out2, old_wsp );
         tag_.clear();
     }
     else
     {
         out.write( whitespace_ );
-        whitespace_.clear();
 
+        whitespace_.clear();
         state_ = state_passthrough;
 
-        handle_tag( tag_, out2 );
+        handle_tag( tag_, out2, "" );
         tag_.clear();
 
         out.write( "\r" );
@@ -553,7 +561,7 @@ void boost::mustache::renderer::finish_state_standalone_2( output_ref out )
         whitespace_.clear();
         state_ = state_passthrough;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out, "" );
         tag_.clear();
 
         in_section_ = false;
@@ -565,7 +573,7 @@ void boost::mustache::renderer::finish_state_standalone_2( output_ref out )
         whitespace_.clear();
         state_ = state_passthrough;
 
-        handle_tag( tag_, out );
+        handle_tag( tag_, out, "" );
         tag_.clear();
 
         out.write( "\r" );
@@ -610,7 +618,7 @@ static boost::core::string_view trim_whitespace( boost::core::string_view sv )
 
 //
 
-void boost::mustache::renderer::handle_tag( core::string_view tag, output_ref out )
+void boost::mustache::renderer::handle_tag( core::string_view tag, output_ref out, core::string_view old_wsp )
 {
     char ch = tag.empty()? '\0': tag.front();
 
@@ -663,7 +671,7 @@ void boost::mustache::renderer::handle_tag( core::string_view tag, output_ref ou
         if( ch == '>' )
         {
             tag.remove_prefix( 1 );
-            return handle_partial_tag( tag, out );
+            return handle_partial_tag( tag, out, old_wsp );
         }
 
         if( ch == '#' )
@@ -856,8 +864,33 @@ void boost::mustache::renderer::handle_delimiter_tag( core::string_view /*tag*/,
 {
 }
 
-void boost::mustache::renderer::handle_partial_tag( core::string_view /*tag*/, output_ref /*out*/ )
+void boost::mustache::renderer::handle_partial_tag( core::string_view tag, output_ref out, core::string_view old_wsp )
 {
+    tag = trim_whitespace( tag );
+
+    if( json::value const* p1 = partials_.if_contains( tag ) )
+    {
+        if( json::string const* p2 = p1->if_string() )
+        {
+            json::string old_start_delim( start_delim_, start_delim_.storage() );
+            json::string old_end_delim( end_delim_, end_delim_.storage() );
+            json::string old_partial_lwsp( partial_lwsp_, partial_lwsp_.storage() );
+
+            partial_lwsp_ += old_wsp;
+
+            if( state_ == state_leading_wsp )
+            {
+                whitespace_ = partial_lwsp_;
+            }
+
+            render_some( *p2, out );
+            finish( out );
+
+            start_delim_ = old_start_delim;
+            end_delim_ = old_end_delim;
+            partial_lwsp_ = old_partial_lwsp;
+        }
+    }
 }
 
 boost::json::value const* boost::mustache::renderer::lookup_value( core::string_view name ) const
