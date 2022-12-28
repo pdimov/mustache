@@ -860,8 +860,41 @@ void boost::mustache::renderer::handle_section_tag( core::string_view tag, outpu
     in_section_ = true;
 }
 
-void boost::mustache::renderer::handle_delimiter_tag( core::string_view /*tag*/, output_ref /*out*/ )
+static boost::core::string_view get_leading_token( boost::core::string_view sv )
 {
+    char const* p = sv.data();
+    char const* end = p + sv.size();
+
+    while( p != end && ( *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n' ) )
+    {
+        ++p;
+    }
+
+    return { sv.data(), static_cast<std::size_t>( p - sv.data() ) };
+}
+
+void boost::mustache::renderer::handle_delimiter_tag( core::string_view tag, output_ref /*out*/ )
+{
+    tag = trim_leading_whitespace( tag );
+
+    auto d1 = get_leading_token( tag );
+    tag.remove_prefix( d1.size() );
+
+    tag = trim_leading_whitespace( tag );
+
+    auto d2 = get_leading_token( tag );
+    tag.remove_prefix( d2.size() );
+
+    tag = trim_leading_whitespace( tag );
+
+    if( d1.empty() || d2.empty() || !tag.empty() )
+    {
+        // the tag contents must be exactly two non-whitespace sequences
+        return;
+    }
+
+    start_delim_ = d1;
+    end_delim_ = d2;
 }
 
 void boost::mustache::renderer::handle_partial_tag( core::string_view tag, output_ref out, core::string_view old_wsp )
@@ -874,8 +907,11 @@ void boost::mustache::renderer::handle_partial_tag( core::string_view tag, outpu
         {
             json::string old_start_delim( start_delim_, start_delim_.storage() );
             json::string old_end_delim( end_delim_, end_delim_.storage() );
-            json::string old_partial_lwsp( partial_lwsp_, partial_lwsp_.storage() );
 
+            start_delim_ = "{{";
+            end_delim_ = "}}";
+
+            json::string old_partial_lwsp( partial_lwsp_, partial_lwsp_.storage() );
             partial_lwsp_ += old_wsp;
 
             if( state_ == state_leading_wsp )
