@@ -8,7 +8,7 @@ https://www.boost.org/LICENSE_1_0.txt
 # Reference
 :idprefix: ref_
 
-## <boost/mustache/mustache.hpp>
+## <boost/mustache/output_ref.hpp>
 
 ### Synopsis
 
@@ -16,8 +16,141 @@ https://www.boost.org/LICENSE_1_0.txt
 namespace boost {
 namespace mustache {
 
-// ...
+class output_ref
+{
+public:
+
+    // only enabled when St is string-like
+    template<class St> output_ref( St& st );
+
+    // only enabled when Os is an output stream
+    template<class Os> output_ref( Os& os );
+
+    void write( boost::core::string_view sv );
+};
 
 } // namespace mustache
 } // namespace boost
 ```
+
+### Constructors
+
+```
+// only enabled when St is string-like
+template<class St> output_ref( St& st );
+```
+
+Effects: ::
+  Constructs an `output_ref` for which calling `write(sv)` performs
+  `st.append(sv.data(), sv.data() + sv.size())`.
+
+Remarks: ::
+  This constructor is only enabled when `typename St::value_type`
+  exists and is `char`.
+
+```
+// only enabled when Os is an output stream
+template<class Os> output_ref( Os& os );
+```
+
+Effects: ::
+  Constructs an `output_ref` for which calling `write(sv)` performs
+  `os.write(sv.data(), sv.size())`.
+
+Remarks: ::
+  This constructor is only enabled when `Os*` is convertible to
+  `std::ostream*`.
+
+### write
+
+```
+void write( boost::core::string_view sv );
+```
+
+Effects: ::
+  Outputs the characters in `sv` in the manner determined by the constructor.
+
+## <boost/mustache/renderer.hpp>
+
+### Synopsis
+
+```
+namespace boost {
+namespace mustache {
+
+class renderer
+{
+public:
+
+    template<class T1, class T2>
+    explicit renderer( T1 const& data, T2 const& partials, boost::json::storage_ptr sp = {} );
+
+    void render_some( boost::core::string_view in, output_ref out );
+    void finish( output_ref out );
+};
+
+} // namespace mustache
+} // namespace boost
+```
+
+### Constructor
+```
+template<class T1, class T2>
+explicit renderer( T1 const& data, T2 const& partials, boost::json::storage_ptr sp = {} );
+```
+
+Effects: ::
+  * Converts `data` to `boost::json::value` by `boost::json::value_from(data, sp)` and stores it at the top of the context stack.
+  * Converts `partials` to `boost::json::object` by `boost::json::value_from(partials, sp).as_object()` and stores it.
+  * Stores `sp` and does all subsequent allocations through it.
+
+### render_some
+```
+void render_some( boost::core::string_view in, output_ref out );
+```
+
+Effects: ::
+  Consumes the next part of the input template from `in` and outputs the portion
+  rendered so far by calling `out.write`. Uses the stored `data` to resolve data
+  references and the stored `partials` to resolve references to partials.
+
+### finish
+```
+void finish( output_ref out );
+```
+
+Effects: ::
+  Should be called once at end of input. Outputs the remaining portion of the
+  rendered output by calling `out.write`.
+
+## <boost/mustache/render.hpp>
+
+### Synopsis
+
+```
+namespace boost {
+namespace mustache {
+
+template<class T1 = boost::json::value, class T2 = boost::json::object>
+void render( boost::core::string_view tmpl, output_ref out, T1 const& data,
+    T2 const& partials, boost::json::storage_ptr sp = {} );
+
+} // namespace mustache
+} // namespace boost
+```
+
+### render
+```
+template<class T1 = boost::json::value, class T2 = boost::json::object>
+void render( boost::core::string_view tmpl, output_ref out, T1 const& data,
+    T2 const& partials, boost::json::storage_ptr sp = {} );
+```
+
+Effects: ::
+  * Constructs a renderer as if by `renderer rd(data, partials, sp);`
+  * Invokes `rd.render_some(tmpl, out)`.
+  * Invokes `rd.finish(tmpl, out)`.
+
+## <boost/mustache.hpp>
+
+This convenience header includes all the headers previously mentioned.
