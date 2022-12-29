@@ -6,6 +6,8 @@
 #include <boost/json/serializer.hpp>
 #include <boost/assert.hpp>
 #include <utility>
+#include <algorithm>
+#include <clocale>
 
 boost::mustache::renderer::renderer( json::value&& data, json::object&& partials, json::storage_ptr sp ):
     context_stack_( sp ), partials_( std::move( partials ), sp ),
@@ -761,6 +763,18 @@ static void maybe_quoted_write( boost::core::string_view sv, boost::mustache::ou
     }
 }
 
+static void gcvt( char* buffer, std::size_t size, double v )
+{
+    std::size_t n = std::snprintf( buffer, size, "%.16g", v );
+
+    char dp = std::localeconv()->decimal_point[0];
+
+    if( dp != '.' )
+    {
+        std::replace( buffer, buffer + std::min( n, size ), dp, '.' );
+    }
+}
+
 static void output_value( boost::json::value const& jv, boost::mustache::output_ref out, bool quoted )
 {
     switch( jv.kind() )
@@ -799,8 +813,8 @@ static void output_value( boost::json::value const& jv, boost::mustache::output_
     case boost::json::kind::double_:
 
         {
-            char buffer[ 32 ];
-            std::snprintf( buffer, sizeof( buffer ), "%.16g", jv.get_double() );
+            char buffer[ 32 ] = {};
+            gcvt( buffer, sizeof( buffer ), jv.get_double() );
 
             maybe_quoted_write( buffer, out, quoted );
         }
