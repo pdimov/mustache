@@ -22,6 +22,7 @@ run output_ref2.cpp ;
 
 run render_literal.cpp ;
 run render_comment.cpp ;
+run render_value.cpp ;
 
 run spec.cpp : : specs/comments.json : : spec_comments ;
 run spec.cpp : : specs/interpolation.json : : spec_interpolation ;
