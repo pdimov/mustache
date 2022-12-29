@@ -58,10 +58,10 @@ int main()
 
     test(
 
-        "null: '{{null}}'; false: '{{false}}'; true: '{{true}}'; int64: '{{int64}}'; uint64: '{{uint64}}'; double: '{{double}}'; double2: '{{double2}}'; array: '{{array}}'; object: '{{&object}}'",
-        { { "null", nullptr }, { "false", false }, { "true", true }, { "int64", -1048576LL }, { "uint64", 1048576ULL }, { "double", 1023.14159 }, { "double2", 1.7e+38 }, { "array", { 1, 2, 3 } }, { "object", { { "x", 1 }, { "y", 2 } } } },
+        "null: '{{null}}'; false: '{{false}}'; true: '{{true}}'; int64: '{{int64}}'; uint64: '{{uint64}}'; double: '{{double}}'; double2: '{{double2}}'; string: '{{string}}'; array: '{{array}}'; object: '{{&object}}'",
+        { { "null", nullptr }, { "false", false }, { "true", true }, { "int64", -1048576LL }, { "uint64", 1048576ULL }, { "double", -1023.14159 }, { "double2", 1.7e+38 }, { "string", "string" }, { "array", { 1, 2, 3 } }, { "object", { { "x", 1 }, { "y", 2 } } } },
         {},
-        "null: ''; false: 'false'; true: 'true'; int64: '-1048576'; uint64: '1048576'; double: '1023.14159'; double2: '1.7e+38'; array: '[1,2,3]'; object: '{\"x\":1,\"y\":2}'"
+        "null: ''; false: 'false'; true: 'true'; int64: '-1048576'; uint64: '1048576'; double: '-1023.14159'; double2: '1.7e+38'; string: 'string'; array: '[1,2,3]'; object: '{\"x\":1,\"y\":2}'"
     );
 
     return errors;
