@@ -31,3 +31,6 @@ run spec.cpp : : specs/sections.json : : spec_sections ;
 run spec.cpp : : specs/inverted.json : : spec_inverted ;
 run spec.cpp : : specs/partials.json : : spec_partials ;
 run spec.cpp : : specs/delimiters.json : : spec_delimiters ;
+
+run ../example/markdown.cpp ;
+run ../example/html.cpp ;
