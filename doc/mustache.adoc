@@ -17,6 +17,7 @@ Peter Dimov
 :leveloffset: +1
 
 include::mustache/overview.adoc[]
+include::mustache/examples.adoc[]
 include::mustache/reference.adoc[]
 include::mustache/copyright.adoc[]
 
