@@ -8,6 +8,8 @@
 #include <string>
 #include <iostream>
 
+// C++ data
+
 struct item
 {
     std::string title;
@@ -24,6 +26,51 @@ struct reference
 };
 
 BOOST_DESCRIBE_STRUCT(reference, (), (heading, items))
+
+// Templates
+
+constexpr char header[] =
+
+R"(<html>
+<head>
+  <title>{{heading}}</title>
+</head>
+<body>
+)";
+
+constexpr char footer[] =
+
+R"(</body>
+</html>
+)";
+
+constexpr char item[] =
+
+R"(<li>
+  <strong>{{title}}</strong><br>
+  <em>{{author}}</em><br>
+  <a href="{{link}}">{{link}}</a>
+</li>
+)";
+
+constexpr char body[] =
+
+R"(<h1>{{heading}}</h1>
+<ul>
+{{#items}}
+  {{>item}}
+{{/items}}
+</ul>
+)";
+
+constexpr char html[] =
+
+R"({{>header}}
+{{>body}}
+{{>footer}}
+)";
+
+//
 
 int main()
 {
@@ -49,20 +96,6 @@ int main()
         }
     };
 
-    std::string tmpl =
-R"(<html>
-<body>
-<h1>{{heading}}</h1>
-<ul>
-{{#items}}
-<li>
-  <strong>{{title}}</strong><br>
-  <em>{{author}}</em><br>
-  <a href="{{link}}">{{link}}</a>
-{{/items}}
-</ul>
-</body>
-</html>)";
-
-    boost::mustache::render( tmpl, std::cout, ref, {} );
+    boost::mustache::render( html, std::cout, ref,
+        { { "header", header }, { "footer", footer }, { "item", item }, { "body", body } } );
 }
