@@ -10,11 +10,200 @@ https://www.boost.org/LICENSE_1_0.txt
 
 ## Description
 
-...
+Boost.Mustache is an implementation of
+http://mustache.github.io/[Mustache templates] in {cpp}11.
+
+Mustache is a simple templating language in which tags of
+the form `{{something}}` are replaced with the value of
+the entity `something`, which typically means with the member
+`"something"` of the JSON object passed when rendering the template.
+
+Boost.Mustache can take a Boost.JSON `object` as the context against
+which data references are resolved, but it can also take arbitrary
+values that can be converted to `boost::json::value` by using
+`boost::json::value_from`. This allows, for instance, described classes
+(structs and classes annotated with https://boost.org/libs/describe[Boost.Describe])
+to be passed as the data context, such that references to e.g. `{{title}}`
+in the template are resolved to the corresponding `title` member of the
+class.
+
+Boost.Mustache implements the mandatory portions of the
+https://github.com/mustache/spec[Mustache specification]. At the
+moment it doesn't implement any of the extensions.
 
 ## Usage Examples
 
-...
+### Generating a markdown document from a {cpp} struct
+
+```
+#include <boost/mustache.hpp>
+#include <boost/describe.hpp>
+#include <iostream>
+
+struct item
+{
+    std::string title;
+    std::string author;
+    std::string link;
+};
+
+BOOST_DESCRIBE_STRUCT(item, (), (title, author, link))
+
+struct reference
+{
+    std::string heading;
+    std::vector<item> items;
+};
+
+BOOST_DESCRIBE_STRUCT(reference, (), (heading, items))
+
+int main()
+{
+    reference ref =
+    {
+        "Reference",
+        {
+            {
+                "Better Bit Mixing - Improving on MurmurHash3's 64-bit Finalizer",
+                "David Stafford",
+                "https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html"
+            },
+            {
+                "Stronger, better, morer, Moremur; a better Murmur3-type mixer",
+                "Pelle Evensen",
+                "https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html"
+            },
+            {
+                "Improved mx3 and the RRC test",
+                "Jon Maiga",
+                "http://jonkagstrom.com/mx3/mx3_rev2.html"
+            }
+        }
+    };
+
+    std::string tmpl =
+R"(# {{{heading}}}
+
+{{#items}}
+* __{{{title}}}__
+_{{{author}}}_
+[{{{link}}}]({{{link}}})
+
+{{/items}})";
+
+    boost::mustache::render( tmpl, std::cout, ref, {} );
+}
+```
+
+Output:
+```markdown
+# Reference
+
+* __Better Bit Mixing - Improving on MurmurHash3's 64-bit Finalizer__
+_David Stafford_
+[https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html](https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html)
+
+* __Stronger, better, morer, Moremur; a better Murmur3-type mixer__
+_Pelle Evensen_
+[https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html](https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html)
+
+* __Improved mx3 and the RRC test__
+_Jon Maiga_
+[http://jonkagstrom.com/mx3/mx3_rev2.html](http://jonkagstrom.com/mx3/mx3_rev2.html)
+```
+
+### Generating an HTML document from a {cpp} struct
+
+This example only differs from the previous one by the contents of the
+template `tmpl`.
+
+```
+#include <boost/mustache.hpp>
+#include <boost/describe.hpp>
+#include <iostream>
+
+struct item
+{
+    std::string title;
+    std::string author;
+    std::string link;
+};
+
+BOOST_DESCRIBE_STRUCT(item, (), (title, author, link))
+
+struct reference
+{
+    std::string heading;
+    std::vector<item> items;
+};
+
+BOOST_DESCRIBE_STRUCT(reference, (), (heading, items))
+
+int main()
+{
+    reference ref =
+    {
+        "Reference",
+        {
+            {
+                "Better Bit Mixing - Improving on MurmurHash3's 64-bit Finalizer",
+                "David Stafford",
+                "https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html"
+            },
+            {
+                "Stronger, better, morer, Moremur; a better Murmur3-type mixer",
+                "Pelle Evensen",
+                "https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html"
+            },
+            {
+                "Improved mx3 and the RRC test",
+                "Jon Maiga",
+                "http://jonkagstrom.com/mx3/mx3_rev2.html"
+            }
+        }
+    };
+
+    std::string tmpl =
+R"(<html>
+<body>
+<h1>{{heading}}</h1>
+<ul>
+{{#items}}
+<li>
+  <strong>{{title}}</strong><br>
+  <em>{{author}}</em><br>
+  <a href="{{link}}">{{link}}</a>
+{{/items}}
+</ul>
+</body>
+</html>)";
+
+    boost::mustache::render( tmpl, std::cout, ref, {} );
+}
+```
+
+Output:
+```html
+<html>
+<body>
+<h1>Reference</h1>
+<ul>
+<li>
+  <strong>Better Bit Mixing - Improving on MurmurHash3's 64-bit Finalizer</strong><br>
+  <em>David Stafford</em><br>
+  <a href="https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html">https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html</a>
+<li>
+  <strong>Stronger, better, morer, Moremur; a better Murmur3-type mixer</strong><br>
+  <em>Pelle Evensen</em><br>
+  <a href="https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html">https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html</a>
+<li>
+  <strong>Improved mx3 and the RRC test</strong><br>
+  <em>Jon Maiga</em><br>
+  <a href="http://jonkagstrom.com/mx3/mx3_rev2.html">http://jonkagstrom.com/mx3/mx3_rev2.html</a>
+</ul>
+</body>
+</html>
+```
 
 ## Supported Compilers
 
