@@ -390,20 +390,15 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_triple( cor
         tag_.push_back( '}' );
     }
 
-    if( standalone_ && is_tag_standalone( tag_ ) )
-    {
-        state_ = state_standalone;
-    }
-    else
-    {
-        out.write( whitespace_ );
+    // triple mustache can't be standalone
 
-        whitespace_.clear();
-        state_ = state_passthrough;
+    out.write( whitespace_ );
 
-        handle_tag( tag_, out2, "" );
-        tag_.clear();
-    }
+    whitespace_.clear();
+    state_ = state_passthrough;
+
+    handle_tag( tag_, out2, "" );
+    tag_.clear();
 
     return { p, static_cast<std::size_t>( end - p ) };
 }
@@ -423,20 +418,13 @@ void boost::mustache::renderer::finish_state_end_triple( output_ref out )
         return;
     }
 
-    if( standalone_ && is_tag_standalone( tag_ ) )
-    {
-        finish_state_standalone( out );
-    }
-    else
-    {
-        out.write( whitespace_ );
+    out.write( whitespace_ );
 
-        whitespace_.clear();
-        state_ = state_passthrough;
+    whitespace_.clear();
+    state_ = state_passthrough;
 
-        handle_tag( tag_, out, "" );
-        tag_.clear();
-    }
+    handle_tag( tag_, out, "" );
+    tag_.clear();
 }
 
 // state_passthrough consumes literal input and emits it immediately,
