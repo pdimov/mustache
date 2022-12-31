@@ -53,6 +53,10 @@ private:
     // set on entering state_start_delim
     bool standalone_ = false;
 
+    // whether the line ending following the standalone tag
+    // has been \r\n, as opposed to just \n
+    bool had_cr_ = false;
+
     // start delimiter, default '{{'
     json::string start_delim_;
 

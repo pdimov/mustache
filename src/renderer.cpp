@@ -496,9 +496,12 @@ boost::core::string_view boost::mustache::renderer::handle_state_standalone( cor
 
     BOOST_ASSERT( p != end );
 
+    had_cr_ = false;
+
     if( *p == '\r' )
     {
         ++p;
+        had_cr_ = true;
         state_ = state_standalone_2;
     }
     else if( *p == '\n' )
@@ -660,7 +663,12 @@ void boost::mustache::renderer::handle_tag( core::string_view tag, output_ref ou
 
             if( standalone_ )
             {
-                section_text_ += "\n"; // \r?
+                if( had_cr_ )
+                {
+                    section_text_ += "\r";
+                }
+
+                section_text_ += "\n";
             }
         }
         else
