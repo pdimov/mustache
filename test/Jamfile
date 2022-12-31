@@ -34,5 +34,7 @@ run spec.cpp : : specs/delimiters.json : : spec_delimiters ;
 
 run spec.cpp : : more/partials.json : : more_partials ;
 
-run ../example/markdown.cpp ;
-run ../example/html.cpp ;
+local CXX14 = [ requires cxx14_return_type_deduction ] ;
+
+run ../example/markdown.cpp : : : $(CXX14) ;
+run ../example/html.cpp : : : $(CXX14) ;
