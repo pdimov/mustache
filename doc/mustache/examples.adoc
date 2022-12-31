@@ -48,25 +48,24 @@ Output:
   <title>Reference</title>
 </head>
 <body>
-<h1>Reference</h1>
-<ul>
-<li>
-  <strong>Better Bit Mixing - Improving on MurmurHash3's 64-bit Finalizer</strong><br>
-  <em>David Stafford</em><br>
-  <a href="https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html">https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html</a>
-</li>
-<li>
-  <strong>Stronger, better, morer, Moremur; a better Murmur3-type mixer</strong><br>
-  <em>Pelle Evensen</em><br>
-  <a href="https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html">https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html</a>
-</li>
-<li>
-  <strong>Improved mx3 and the RRC test</strong><br>
-  <em>Jon Maiga</em><br>
-  <a href="http://jonkagstrom.com/mx3/mx3_rev2.html">http://jonkagstrom.com/mx3/mx3_rev2.html</a>
-</li>
-</ul>
-
+  <h1>Reference</h1>
+  <ul>
+    <li>
+      <strong>Better Bit Mixing - Improving on MurmurHash3's 64-bit Finalizer</strong><br>
+      <em>David Stafford</em><br>
+      <a href="https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html">https://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html</a>
+    </li>
+    <li>
+      <strong>Stronger, better, morer, Moremur; a better Murmur3-type mixer</strong><br>
+      <em>Pelle Evensen</em><br>
+      <a href="https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html">https://mostlymangling.blogspot.com/2019/12/stronger-better-morer-moremur-better.html</a>
+    </li>
+    <li>
+      <strong>Improved mx3 and the RRC test</strong><br>
+      <em>Jon Maiga</em><br>
+      <a href="http://jonkagstrom.com/mx3/mx3_rev2.html">http://jonkagstrom.com/mx3/mx3_rev2.html</a>
+    </li>
+  </ul>
 </body>
 </html>
 ```

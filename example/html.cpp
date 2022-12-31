@@ -66,7 +66,7 @@ R"(<h1>{{heading}}</h1>
 constexpr char html[] =
 
 R"({{>header}}
-{{>body}}
+  {{>body}}
 {{>footer}}
 )";
 
