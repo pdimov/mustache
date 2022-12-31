@@ -4,14 +4,30 @@
       "name": "Nested Indentation",
       "desc": "Nested partials should be indented properly.",
       "data": {
-        "item": "item"
+        "item": "12"
       },
       "template": "<body>\n  {{>body}}\n</body>\n",
       "partials": {
         "body": "<ul>\n  {{>item}}\n</ul>\n",
         "item": "<li>{{item}}</li>\n"
       },
-      "expected": "<body>\n  <ul>\n    <li>item</li>\n  </ul>\n</body>\n"
+      "expected": "<body>\n  <ul>\n    <li>12</li>\n  </ul>\n</body>\n"
+    },
+    {
+      "name": "Nested Indentation in Sections",
+      "desc": "Nested partials in section should be indented properly.",
+      "data": {
+        "items": [
+          { "item": 17 },
+          { "item": 18 }
+        ]
+      },
+      "template": "<body>\n  {{>body}}\n</body>\n",
+      "partials": {
+        "body": "<ul>\n{{#items}}\n  {{>item}}\n{{/items}}\n</ul>\n",
+        "item": "<li>{{item}}</li>\n"
+      },
+      "expected": "<body>\n  <ul>\n    <li>17</li>\n    <li>18</li>\n  </ul>\n</body>\n"
     }
   ]
 }

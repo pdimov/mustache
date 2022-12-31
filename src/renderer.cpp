@@ -21,6 +21,44 @@ boost::mustache::renderer::~renderer()
 {
 }
 
+// utility functions
+
+static boost::core::string_view trim_leading_whitespace( boost::core::string_view sv )
+{
+    char const* p = sv.data();
+    char const* end = p + sv.size();
+
+    while( p != end && ( *p == ' ' || *p == '\t' ) )
+    {
+        ++p;
+    }
+
+    return { p, static_cast<std::size_t>( end - p ) };
+}
+
+static boost::core::string_view trim_trailing_whitespace( boost::core::string_view sv )
+{
+    char const* p = sv.data();
+    char const* end = p + sv.size();
+
+    while( p != end && ( end[ -1 ] == ' ' || end[ -1 ] == '\t' ) )
+    {
+        --end;
+    }
+
+    return { p, static_cast<std::size_t>( end - p ) };
+}
+
+static boost::core::string_view trim_whitespace( boost::core::string_view sv )
+{
+    sv = trim_leading_whitespace( sv );
+    sv = trim_trailing_whitespace( sv );
+
+    return sv;
+}
+
+//
+
 void boost::mustache::renderer::render_some( core::string_view in, output_ref out )
 {
     while( !in.empty() )
@@ -238,6 +276,8 @@ void boost::mustache::renderer::finish_state_tag( output_ref out )
 
 static bool is_tag_standalone( boost::core::string_view tag )
 {
+    tag = trim_leading_whitespace( tag );
+
     if( tag.empty() )
     {
         return false;
@@ -272,11 +312,16 @@ boost::core::string_view boost::mustache::renderer::handle_state_end_delim( core
     {
         // end delimiter
 
+        if( standalone_ && !is_tag_standalone( tag_ ) )
+        {
+            standalone_ = false;
+        }
+
         if( end_delim_ == "}}" && !tag_.empty() && tag_.front() == '{' )
         {
             state_ = state_end_triple;
         }
-        else if( standalone_ && is_tag_standalone( tag_ ) )
+        else if( standalone_ )
         {
             state_ = state_standalone;
         }
@@ -584,42 +629,6 @@ void boost::mustache::renderer::finish_state_standalone_2( output_ref out )
 
 //
 
-static boost::core::string_view trim_leading_whitespace( boost::core::string_view sv )
-{
-    char const* p = sv.data();
-    char const* end = p + sv.size();
-
-    while( p != end && ( *p == ' ' || *p == '\t' ) )
-    {
-        ++p;
-    }
-
-    return { p, static_cast<std::size_t>( end - p ) };
-}
-
-static boost::core::string_view trim_trailing_whitespace( boost::core::string_view sv )
-{
-    char const* p = sv.data();
-    char const* end = p + sv.size();
-
-    while( p != end && ( end[ -1 ] == ' ' || end[ -1 ] == '\t' ) )
-    {
-        --end;
-    }
-
-    return { p, static_cast<std::size_t>( end - p ) };
-}
-
-static boost::core::string_view trim_whitespace( boost::core::string_view sv )
-{
-    sv = trim_leading_whitespace( sv );
-    sv = trim_trailing_whitespace( sv );
-
-    return sv;
-}
-
-//
-
 void boost::mustache::renderer::handle_tag( core::string_view tag, output_ref out, core::string_view old_wsp )
 {
     char ch = tag.empty()? '\0': tag.front();
@@ -652,9 +661,19 @@ void boost::mustache::renderer::handle_tag( core::string_view tag, output_ref ou
 
         if( !ends )
         {
-            section_text_.append( start_delim_ );
-            section_text_.append( tag_ );
-            section_text_.append( end_delim_ );
+            if( standalone_ )
+            {
+                section_text_ += whitespace_;
+            }
+
+            section_text_ += start_delim_;
+            section_text_ += tag_;
+            section_text_ += end_delim_;
+
+            if( standalone_ )
+            {
+                section_text_ += "\n"; // \r?
+            }
         }
         else
         {
