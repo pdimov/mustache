@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "Nested Indentation",
+      "desc": "Nested partials should be indented properly.",
+      "data": {
+        "item": "item"
+      },
+      "template": "<body>\n  {{>body}}\n</body>\n",
+      "partials": {
+        "body": "<ul>\n  {{>item}}\n</ul>\n",
+        "item": "<li>{{item}}</li>\n"
+      },
+      "expected": "<body>\n  <ul>\n    <li>item</li>\n  </ul>\n</body>\n"
+    }
+  ]
+}

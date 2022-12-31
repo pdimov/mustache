@@ -130,10 +130,10 @@ void boost::mustache::renderer::finish_state_leading_wsp( output_ref out )
         // we shouldn't be outputting it at partial end
 
         out.write( whitespace_ );
-    }
 
-    whitespace_.clear();
-    state_ = state_passthrough;
+        whitespace_.clear();
+        state_ = state_passthrough;
+    }
 }
 
 // state_start_delim consumes the start delimiter ('{{' by default)
@@ -926,7 +926,7 @@ void boost::mustache::renderer::handle_partial_tag( core::string_view tag, outpu
             end_delim_ = "}}";
 
             json::string old_partial_lwsp( partial_lwsp_, partial_lwsp_.storage() );
-            partial_lwsp_ += old_wsp;
+            partial_lwsp_ = old_wsp;
 
             if( state_ == state_leading_wsp )
             {
@@ -935,6 +935,11 @@ void boost::mustache::renderer::handle_partial_tag( core::string_view tag, outpu
 
             render_some( *p2, out );
             finish( out );
+
+            if( state_ == state_leading_wsp && whitespace_ == partial_lwsp_ )
+            {
+                whitespace_ = old_partial_lwsp;
+            }
 
             start_delim_ = old_start_delim;
             end_delim_ = old_end_delim;
