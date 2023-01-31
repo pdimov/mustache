@@ -4,9 +4,8 @@ A C++11 implementation of [Mustache templates](http://mustache.github.io/).
 The mandatory portions of the [specification](https://github.com/mustache/spec)
 are supported.
 
-Preliminary documentation is available: [overview](doc/mustache/overview.adoc),
-[usage examples](doc/mustache/examples.adoc),
-[reference](doc/mustache/reference.adoc).
+Preliminary documentation is available at
+[https://pdimov.github.io/mustache](https://pdimov.github.io/mustache).
 
 ## Supported Compilers
 
